@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot PDF</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f0f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #chatbox {
+            width: 100%;
+            max-width: 450px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 10px;
+        }
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-in-out;
+        }
+        .bot-message {
+            text-align: left;
+            color: #ffffff;
+            background-color: #6c63ff;
+            padding: 10px;
+            border-radius: 10px 10px 10px 0;
+        }
+        .user-message {
+            text-align: right;
+            color: #333333;
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-radius: 10px 10px 0 10px;
+            align-self: flex-end;
+        }
+        #userInput {
+            width: calc(100% - 55px);
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 20px;
+            outline: none;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        #userInput:focus {
+            border-color: #6c63ff;
+        }
+        #sendButton {
+            padding: 10px 15px;
+            background-color: #6c63ff;
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            margin-left: 10px;
+            transition: background-color 0.3s;
+        }
+        #sendButton:hover {
+            background-color: #554bb5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #cccccc;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chatbox">
+        <div id="messages"></div>
+        <div style="display: flex; align-items: center;">
+            <input type="text" id="userInput" placeholder="Écrivez votre réponse...">
+            <button id="sendButton">➤</button>
+        </div>
+    </div>
+
+    <script>
+        let messages = document.getElementById("messages");
+        let userInput = document.getElementById("userInput");
+
+        const botMessages = [
+            "Quel est le nom de votre entreprise ou le votre ?",
+            "Quelle est votre adresse e-mail ?",
+            "Quel est votre numéro de téléphone ?",
+            "Quel est votre secteur d'activité ?",
+            "Quels sont les messages ou valeurs essentiels que vous souhaitez véhiculer à travers votre logo ?",
+            "Quels mots-clés ou adjectifs décrivent le mieux votre entreprise et devraient être reflétés dans le logo ?",
+            "Quel est votre style de logo préféré ?",
+            "Quelles sont vos couleurs préférées ?",
+            "Quelles couleurs souhaitez-vous éviter ?",
+            "Y a-t-il des éléments graphiques ou des symboles spécifiques que vous aimeriez intégrer dans le logo ?",
+            "Ces éléments ont-ils une signification particulière pour votre entreprise ou votre marque ?",
+            "Quels sont des exemples de logos que vous appréciez ?",
+            "Quel type de typographie préférez-vous ? Plutôt sobre et élégante, ou plus audacieuse et créative ?",
+            "Quel est votre public cible ?",
+            "Y a-t-il des éléments spécifiques que le logo devrait prendre en compte pour attirer ce public cible ?",
+            "Quelle est l'utilisation prévue du logo ?",
+            "Est-ce que vous avez des suggestions pour des éléments visuels qui pourraient représenter votre marque ?",
+            "Y a-t-il d'autres informations ou exigences particulières que vous souhaitez partager concernant votre logo ?",
+            "Quel est le délai pour ce projet ?",
+            "Avez-vous des commentaires ou des précisions à ajouter ?"
+                    
+        ];
+
+        let step = 0;
+        let responses = [];
+
+        function sendMessage(message, type) {
+            let messageElement = document.createElement("div");
+            messageElement.classList.add("message", type + "-message");
+            messageElement.textContent = message;
+            messages.appendChild(messageElement);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        document.getElementById("sendButton").addEventListener("click", () => {
+            let userMessage = userInput.value.trim();
+            if (userMessage !== "") {
+                sendMessage(userMessage, "user");
+                responses.push(userMessage);
+                userInput.value = "";
+
+                if (step < botMessages.length - 1) {
+                    setTimeout(() => {
+                        sendMessage(botMessages[step], "bot");
+                        step++;
+                    }, 500);
+                } else {
+                    setTimeout(() => {
+                        generatePDF();
+                    }, 500);
+                }
+            }
+        });
+
+        function generatePDF() {
+            fetch("generate_pdf.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(responses),
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.style.display = "none";
+                a.href = url;
+                a.download = "reponses.pdf";
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
+        }
+
+        sendMessage(botMessages[step], "bot");
+        step++;
+    </script>
+    <a href="test1.html">bot1</a>
+</body>
+</html>
